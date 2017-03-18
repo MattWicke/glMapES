@@ -17,7 +17,8 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
 //      frameVec.push_back(tempFrame);
 //  }
 
-    vidCap >> frame;
+    //for(int ii; ii <12; ii++)
+        vidCap >> frame;
 
 
     glGenVertexArrays(1, &vertexArrayObj);
