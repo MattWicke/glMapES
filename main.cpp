@@ -143,6 +143,25 @@ void mouseMoveCB( int _x, int _y)
    glutPostRedisplay();
 }
 
+void dumpFrameBuffer()
+{
+    int width = glutGet(GLUT_WINDOW_WIDTH);
+    int height = glutGet(GLUT_WINDOW_HEIGHT);
+    cv::Mat targetcv(width, height, CV_8UC3);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, targetcv.step/targetcv.elemSize());
+    glReadPixels(  0
+                 , 0
+                 , width
+                 , height
+                 , GL_RGB
+                 , GL_UNSIGNED_BYTE
+                 , targetcv.data
+                 );
+    cv::cvtColor(targetcv, targetcv, COLOR_RGB2BGR);
+    cv::imwrite("frameDump.jpg", targetcv);
+
+}
+
 void keyboardCB( unsigned char _key, int _x, int _y)
 {
    if(_key == ' ')
@@ -179,6 +198,10 @@ void keyboardCB( unsigned char _key, int _x, int _y)
          coordData.push_back(tempCoords);
       }
       writeCoordsFile( "outfile.clist", coordData);
+   }
+   if(_key == 'd')
+   {
+      dumpFrameBuffer();
    }
 }
 
