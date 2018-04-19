@@ -18,7 +18,7 @@
 
 using namespace cv; 
 //global vars 
-const int FRAMERATE = 15;
+const int FRAMERATE = 30;
 bool fullScreen = false;
 bool play = false;
 int Surface::surfaceCount = 0;
@@ -309,6 +309,7 @@ int main(int argc, char* argv[])
    glutDisplayFunc(display_callback);
 //   glutIdleFunc(idle_callback);
     std::cout << "loaded" << std::endl;
+   //glutTimerFunc(100, timer_callback, 0);
    glutTimerFunc(100, timer_callback, 0);
    glutMainLoop();
    return 0;

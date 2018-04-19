@@ -8,6 +8,8 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
     plistIndex(0)
 {
     vidCap.open(plist[0].c_str());
+    if(!vidCap.isOpened())
+        std::cerr << "ERROR: failed to open " << plist[0] << std::endl;
 
 //** code for caching all video frames in memory
 //  while(vidCap.get(CV_CAP_PROP_POS_FRAMES) < vidCap.get(CV_CAP_PROP_FRAME_COUNT) - 1)
