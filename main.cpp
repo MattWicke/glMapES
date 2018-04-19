@@ -12,6 +12,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include <locale>
 #include <vector>
+#include "mqtt.h"
 
 #include <math.h>
 #include "util.h"
@@ -25,6 +26,7 @@ int Surface::surfaceCount = 0;
 int Surface::activeSurfaceIndex = 0;
 bool masterDragState = false;
 vector<Surface> surfaces;
+extern bool synced;
 
 int initialize(int _argc, char* _argv[])
 {
@@ -216,6 +218,8 @@ int main(int argc, char* argv[])
    bool usePlaylist = false;
    bool useCoordlist = false;
    bool usePlist = false;
+   bool isNetwork = false;
+   std::string hostName;
 
    initialize(argc, argv);
    GLenum ret = glewInit();
@@ -281,6 +285,11 @@ int main(int argc, char* argv[])
               std::cout << std::endl;
           }
       }
+      if(argstring == "-n")
+      {
+          isNetwork = true;
+          hostName = std::string(argv[i+1]);
+      }
    }
 
    if(!useCoordlist)
@@ -309,7 +318,13 @@ int main(int argc, char* argv[])
    glutDisplayFunc(display_callback);
 //   glutIdleFunc(idle_callback);
     std::cout << "loaded" << std::endl;
-   //glutTimerFunc(100, timer_callback, 0);
+    mq::init(hostName);
+    if(isNetwork)
+    {
+        play = true;
+        while(!synced);
+        std::cout << "runnning" << std::endl;
+    }
    glutTimerFunc(100, timer_callback, 0);
    glutMainLoop();
    return 0;
