@@ -1,4 +1,12 @@
 #include "surface.h"
+
+void check(std::string functionName)
+{
+	GLenum err = glGetError();
+	if(err != GL_NO_ERROR)
+		std::cout << "************* GL ERROR: " << err 
+			<< functionName << std::endl;
+}
 Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _program, int _handleRad):
     plist(_plist),
     program(_program),
@@ -47,21 +55,35 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
     glGenVertexArrays( 1, &vboTexcoords ) ;
     glGenBuffers(1, &vboTexcoords);
     glBindBuffer(GL_ARRAY_BUFFER, vboTexcoords);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(texCoordData), texCoordData, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER
+		    , sizeof(texCoordData)
+		    , texCoordData
+		    , GL_STREAM_DRAW);
 
     glGenBuffers( 1, &texBuffer ); 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
 
     glGenTextures( 1, &textureObj );
     glBindTexture( GL_TEXTURE_2D,  textureObj );
-    //glBindTexture( GL_TEXTURE_2D,  textureObj );
     glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.step/frame.elemSize());
     glBufferData( GL_PIXEL_UNPACK_BUFFER,
               frame.rows * frame.cols * 3,
               frame.data,
               GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
 
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, frame.cols, frame.rows);
+    //glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, frame.cols, frame.rows);
+
+    glTexImage2D(
+		    GL_TEXTURE_2D
+		    , 0 //LEVEL
+		    , 4 //base,
+		    , frame.cols
+		    , frame.rows
+		    , 0
+		    , GL_BGR
+		    , GL_UNSIGNED_BYTE
+		    ,NULL);
+
 
     glTexSubImage2D(GL_TEXTURE_2D,
                 0,      //mip level
@@ -74,8 +96,8 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
     surfaceID = surfaceCount;
 
@@ -84,22 +106,36 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
 
 void Surface::draw()
 {
-    glBindBuffer(GL_ARRAY_BUFFER, vboTexcoords);
+	glUseProgram(program);
     GLint intexLocation = glGetAttribLocation(program, "in_tex_coord");
+    if(intexLocation == -1)
+	    std::cout << "could not bind intex" << std::endl;
+    GLint tex_uniform = glGetUniformLocation(program, "tex");
+    if(tex_uniform == -1)
+	    std::cout << "could not bind tex" << std::endl;
+    GLint inposLocation = glGetAttribLocation(program, "in_pos");
+    if(inposLocation == -1)
+	    std::cout << "could not bind inposeLocation" << std::endl;
+
+    glUniform1i(tex_uniform, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vboTexcoords);
+    glBindTexture( GL_TEXTURE_2D,  textureObj );
     glVertexAttribPointer(intexLocation, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
     glEnableVertexAttribArray(intexLocation);
 
-    //glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
-    glBindTexture( GL_TEXTURE_2D,  textureObj );
-    //glActiveTexture(texBuffer);
+    glActiveTexture(GL_TEXTURE0);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vboVert);
 
-    GLint inposLocation = glGetAttribLocation(program, "in_pos");
+    //glBindBuffer(GL_ARRAY_BUFFER, vboVert);
     glEnableVertexAttribArray(inposLocation);
+    glBindBuffer(GL_ARRAY_BUFFER, vboVert);
     glVertexAttribPointer(inposLocation, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  //int size;  glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+  //glDrawElements(GL_TRIANGLES, size/sizeof(GLushort), GL_UNSIGNED_SHORT, 0);
 }
 
 void Surface::update()
@@ -128,7 +164,10 @@ void Surface::update()
         glDeleteBuffers(1, &vboTexcoords);
         glGenBuffers(1, &vboTexcoords);
         glBindBuffer(GL_ARRAY_BUFFER, vboTexcoords);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(texCoordData), texCoordData, GL_STREAM_DRAW);
+        glBufferData(GL_ARRAY_BUFFER
+			, sizeof(texCoordData)
+			, texCoordData
+			, GL_STREAM_DRAW);
 
         glDeleteBuffers(1, &texBuffer);
         glGenBuffers( 1, &texBuffer ); 
@@ -143,8 +182,18 @@ void Surface::update()
                       frame.data,
                       GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
 
-        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, frame.cols, frame.rows);
+        //glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, frame.cols, frame.rows);
 
+	    glTexImage2D(
+		    GL_TEXTURE_2D
+		    , 0 //LEVEL
+		    , 4 //base,
+		    , frame.cols
+		    , frame.rows
+		    , 0
+		    , GL_BGR
+		    , GL_UNSIGNED_BYTE
+		    ,NULL);
         glTexSubImage2D(GL_TEXTURE_2D,
                         0,      //mip level
                         0, 0,   // offset
@@ -155,8 +204,6 @@ void Surface::update()
                         NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
 
     vidCap >> frame;
@@ -167,6 +214,9 @@ void Surface::update()
                   frame.rows * frame.cols * 3,
                   frame.data,
                   GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
+
+    std::chrono::time_point<std::chrono::system_clock> start 
+	    = std::chrono::system_clock::now();
 
     glBindTexture( GL_TEXTURE_2D,  textureObj );
     glTexSubImage2D(GL_TEXTURE_2D,
@@ -179,6 +229,10 @@ void Surface::update()
                     NULL);
                     //NULL);
 
+    std::chrono::time_point<std::chrono::system_clock> now 
+	    = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_time = now - start;
+   std::cout <<  "update" << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
  //** code for caching all video frames in memory rather than on disk
 //   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
 //   glBufferData( GL_PIXEL_UNPACK_BUFFER,

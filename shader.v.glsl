@@ -1,9 +1,7 @@
-#version 300 es
+attribute vec4 in_pos;
+attribute vec2 in_tex_coord;
 
-in vec4 in_pos;
-in vec2 in_tex_coord;
-
-out vec2 vs_tex_coord;
+varying vec2 vs_tex_coord;
 
 void main(void)
 {
