@@ -29,6 +29,26 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
 
     //for(int ii; ii <12; ii++)
         vidCap >> frame;
+    cv::Mat alpha(
+            frame.rows
+            ,frame.cols
+            ,CV_8UC1
+            , 255);
+    cv::Mat padded_frame(
+            frame.rows
+            ,frame.cols
+            ,CV_8UC4
+            );
+    cv::Mat frameArray[] = {frame, alpha};
+    int from_to[] = {0,2, 1,1, 2,0, 3,3};
+    cv::mixChannels(
+            frameArray
+            , 2
+            , &padded_frame
+            , 1
+            , from_to
+            , 4
+            );
 
 
     glGenVertexArrays(1, &vertexArrayObj);
@@ -65,24 +85,35 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
 
     glGenTextures( 1, &textureObj );
     glBindTexture( GL_TEXTURE_2D,  textureObj );
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.step/frame.elemSize());
+//    glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.step/frame.elemSize());
+//    std::cout << "Opencv step " << frame.step << std::endl;
+//    std::cout << "Opencv element size " << frame.elemSize() << std::endl;
+//    glBufferData( GL_PIXEL_UNPACK_BUFFER,
+//              frame.rows * frame.cols * 3,
+//              frame.data,
+//              GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH
+            , padded_frame.step/padded_frame.elemSize());
+    std::cout << "Opencv step " << frame.step << std::endl;
+    std::cout << "Opencv element size " << frame.elemSize() << std::endl;
     glBufferData( GL_PIXEL_UNPACK_BUFFER,
-              frame.rows * frame.cols * 3,
-              frame.data,
+              padded_frame.rows * padded_frame.cols * 4,
+              padded_frame.data,
               GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
 
-    //glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, frame.cols, frame.rows);
 
     glTexImage2D(
 		    GL_TEXTURE_2D
 		    , 0 //LEVEL
-		    , 4 //base,
+		    , GL_RGBA //base,
 		    , frame.cols
 		    , frame.rows
 		    , 0
-		    , GL_BGR
+		    , GL_RGBA
 		    , GL_UNSIGNED_BYTE
 		    ,NULL);
+    check("glTexImage2d");
 
 
     glTexSubImage2D(GL_TEXTURE_2D,
@@ -90,8 +121,9 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
                 0, 0,   // offset
                 frame.cols, 
                 frame.rows,
-                GL_BGR, 
+                GL_RGBA, 
                 GL_UNSIGNED_BYTE,
+                //frame.data);
                 NULL);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -207,13 +239,40 @@ void Surface::update()
     }
 
     vidCap >> frame;
+    cv::Mat alpha(
+            frame.rows
+            ,frame.cols
+            ,CV_8UC1
+            , 255);
+    cv::Mat padded_frame(
+            frame.rows
+            ,frame.cols
+            ,CV_8UC4
+            );
+    cv::Mat frameArray[] = {frame, alpha};
+    int from_to[] = {0,2, 1,1, 2,0, 3,3};
+    cv::mixChannels(
+            frameArray
+            , 2
+            , &padded_frame
+            , 1
+            , from_to
+            , 4
+            );
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.step/frame.elemSize());
+   // glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.step/frame.elemSize());
+   // glBufferData( GL_PIXEL_UNPACK_BUFFER,
+   //               frame.rows * frame.cols * 3,
+   //               frame.data,
+   //               GL_STREAM_DRAW); 
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH
+            , padded_frame.step/padded_frame.elemSize());
     glBufferData( GL_PIXEL_UNPACK_BUFFER,
-                  frame.rows * frame.cols * 3,
-                  frame.data,
-                  GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
+              padded_frame.rows * padded_frame.cols * 4,
+              padded_frame.data,
+              GL_STREAM_DRAW); 
 
     std::chrono::time_point<std::chrono::system_clock> start 
 	    = std::chrono::system_clock::now();
@@ -224,7 +283,7 @@ void Surface::update()
                     0, 0,   // offset
                     frame.cols,
                     frame.rows, 
-                    GL_BGR, 
+                    GL_RGBA, 
                     GL_UNSIGNED_BYTE,
                     NULL);
                     //NULL);
