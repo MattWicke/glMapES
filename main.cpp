@@ -12,6 +12,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include <locale>
 #include <vector>
+#include <chrono>
 #include "mqtt.h"
 
 #include <math.h>
@@ -19,7 +20,7 @@
 
 using namespace cv; 
 //global vars 
-const int FRAMERATE = 30;
+const int FRAMERATE = 25;
 bool fullScreen = false;
 bool play = false;
 int Surface::surfaceCount = 0;
@@ -27,6 +28,7 @@ int Surface::activeSurfaceIndex = 0;
 bool masterDragState = false;
 vector<Surface> surfaces;
 extern bool synced;
+std::chrono::time_point<std::chrono::system_clock> frame_time;
 
 int initialize(int _argc, char* _argv[])
 {
@@ -45,20 +47,19 @@ int initialize(int _argc, char* _argv[])
 
 void display_callback(void)
 {
-   glClear(GL_COLOR_BUFFER_BIT);
-   
-   for(int i = 0; i < surfaces.size(); i++)
-   {
-      surfaces[i].draw();
-   }
+    std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
 
    glutSwapBuffers();
-   //glFlush();
+   std::chrono::duration<double> elapsed_time = now - frame_time;
+   //std::cout <<  std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
+    frame_time = now;
 }
 
 //void idle_callback(void)
 void timer_callback(int value)
 {
+   glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
+   glutPostRedisplay();
    if(play)
    {
       for(int i = 0; i < surfaces.size(); i++)
@@ -67,8 +68,11 @@ void timer_callback(int value)
       }
    }
 
-   glutPostRedisplay();
-   glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
+   glClear(GL_COLOR_BUFFER_BIT); 
+   for(int i = 0; i < surfaces.size(); i++)
+   {
+      surfaces[i].draw();
+   }
 }
 
 double pix2cart(float inval, float max)

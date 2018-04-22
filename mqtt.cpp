@@ -36,8 +36,12 @@ void mq::init(
         std::string hostName
         )
 {
+    int clientId = 3;
+    char clientid[30];
+    gethostname(clientid, 30);
+
     mosquitto_ptr = mosquitto_new(
-            NULL
+            clientid
             ,true
             ,NULL
             );

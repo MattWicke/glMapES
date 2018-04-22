@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstddef>
 #include <string.h>
+#include <unistd.h>
 
 namespace mq
 {
