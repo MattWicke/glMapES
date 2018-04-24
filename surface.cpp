@@ -19,22 +19,14 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
     if(!vidCap.isOpened())
         std::cerr << "ERROR: failed to open " << plist[0] << std::endl;
 
-//** code for caching all video frames in memory
-//  while(vidCap.get(CV_CAP_PROP_POS_FRAMES) < vidCap.get(CV_CAP_PROP_FRAME_COUNT) - 1)
-//  {
-//      Mat tempFrame;
-//      vidCap >> tempFrame;
-//      frameVec.push_back(tempFrame);
-//  }
 
-    //for(int ii; ii <12; ii++)
-        vidCap >> frame;
-    cv::Mat alpha(
-            frame.rows
-            ,frame.cols
-            ,CV_8UC1
-            , 255);
-    cv::Mat padded_frame(
+    vidCap >> frame;
+     alpha = cv::Mat(
+                frame.rows
+                ,frame.cols
+                ,CV_8UC1
+                , 255);
+    padded_frame = cv::Mat(
             frame.rows
             ,frame.cols
             ,CV_8UC4
@@ -85,18 +77,9 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
 
     glGenTextures( 1, &textureObj );
     glBindTexture( GL_TEXTURE_2D,  textureObj );
-//    glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.step/frame.elemSize());
-//    std::cout << "Opencv step " << frame.step << std::endl;
-//    std::cout << "Opencv element size " << frame.elemSize() << std::endl;
-//    glBufferData( GL_PIXEL_UNPACK_BUFFER,
-//              frame.rows * frame.cols * 3,
-//              frame.data,
-//              GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH
             , padded_frame.step/padded_frame.elemSize());
-    std::cout << "Opencv step " << frame.step << std::endl;
-    std::cout << "Opencv element size " << frame.elemSize() << std::endl;
     glBufferData( GL_PIXEL_UNPACK_BUFFER,
               padded_frame.rows * padded_frame.cols * 4,
               padded_frame.data,
@@ -192,6 +175,16 @@ void Surface::update()
         if(!vidCap.isOpened())
             cout << "*************Furck******************************" << endl;
         vidCap >> frame;
+        cv::Mat frameArray[] = {frame, alpha};
+        int from_to[] = {0,2, 1,1, 2,0, 3,3};
+        cv::mixChannels(
+                frameArray
+                , 2
+                , &padded_frame
+                , 1
+                , from_to
+                , 4
+                );
 
         glDeleteBuffers(1, &vboTexcoords);
         glGenBuffers(1, &vboTexcoords);
@@ -208,11 +201,14 @@ void Surface::update()
         glDeleteTextures( 1, &textureObj );
         glGenTextures( 1, &textureObj );
         glBindTexture( GL_TEXTURE_2D,  textureObj );
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.step/frame.elemSize());
+
+        glPixelStorei(GL_UNPACK_ROW_LENGTH
+                , padded_frame.step/padded_frame.elemSize());
         glBufferData( GL_PIXEL_UNPACK_BUFFER,
-                      frame.rows * frame.cols * 3,
-                      frame.data,
-                      GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
+                  padded_frame.rows * padded_frame.cols * 4,
+                  padded_frame.data,
+                  GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
+    
 
         //glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, frame.cols, frame.rows);
 
@@ -223,7 +219,7 @@ void Surface::update()
 		    , frame.cols
 		    , frame.rows
 		    , 0
-		    , GL_BGR
+		    , GL_RGBA
 		    , GL_UNSIGNED_BYTE
 		    ,NULL);
         glTexSubImage2D(GL_TEXTURE_2D,
@@ -231,24 +227,14 @@ void Surface::update()
                         0, 0,   // offset
                         frame.cols, 
                         frame.rows,
-                        GL_BGR, 
-                            GL_UNSIGNED_BYTE,
+                        GL_RGBA, 
+                        GL_UNSIGNED_BYTE,
                         NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
     vidCap >> frame;
-    cv::Mat alpha(
-            frame.rows
-            ,frame.cols
-            ,CV_8UC1
-            , 255);
-    cv::Mat padded_frame(
-            frame.rows
-            ,frame.cols
-            ,CV_8UC4
-            );
     cv::Mat frameArray[] = {frame, alpha};
     int from_to[] = {0,2, 1,1, 2,0, 3,3};
     cv::mixChannels(
@@ -261,12 +247,6 @@ void Surface::update()
             );
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
-   // glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.step/frame.elemSize());
-   // glBufferData( GL_PIXEL_UNPACK_BUFFER,
-   //               frame.rows * frame.cols * 3,
-   //               frame.data,
-   //               GL_STREAM_DRAW); 
-
     glPixelStorei(GL_UNPACK_ROW_LENGTH
             , padded_frame.step/padded_frame.elemSize());
     glBufferData( GL_PIXEL_UNPACK_BUFFER,
@@ -291,27 +271,7 @@ void Surface::update()
     std::chrono::time_point<std::chrono::system_clock> now 
 	    = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_time = now - start;
-   std::cout <<  "update" << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
- //** code for caching all video frames in memory rather than on disk
-//   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
-//   glBufferData( GL_PIXEL_UNPACK_BUFFER,
-//                 frameVec[frameIndex].rows * frameVec[frameIndex].cols * 3,
-//                 frameVec[frameIndex].data,
-//                 GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
-
-//   glBindTexture( GL_TEXTURE_2D,  textureObj );
-//   glTexSubImage2D(GL_TEXTURE_2D,
-//                   0,      //mip level
-//                   0, 0,   // offset
-//                   frameVec[frameIndex].cols,
-//                   frameVec[frameIndex].rows, 
-//                   GL_BGR, 
-//                   GL_UNSIGNED_BYTE,
-//                   NULL);
-//   if(frameIndex < frameVec.size())
-//       frameIndex ++;
-//   else
-//       frameIndex = 0;
+   //std::cout <<  "update" << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
 
 }
 void Surface::dragHandle(double _x, double _y)

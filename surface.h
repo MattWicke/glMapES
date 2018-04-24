@@ -44,4 +44,7 @@ class Surface
     void releaseHandle();
     float* getVertData();
     void reset();
+private:
+    cv::Mat alpha;
+    cv::Mat padded_frame;
 };

@@ -51,7 +51,7 @@ void display_callback(void)
 
    glutSwapBuffers();
    std::chrono::duration<double> elapsed_time = now - frame_time;
-   //std::cout <<  std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
+   std::cout <<  std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
     frame_time = now;
 }
 
