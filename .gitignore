@@ -3,5 +3,6 @@
 *.o
 *.out
 *.clist
+!light.clist
 *.plist
 *.swp
