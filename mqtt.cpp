@@ -3,7 +3,9 @@ namespace mq
 {
 struct mosquitto *mosquitto_ptr = NULL;
 }
-bool synced = false;
+bool master_waiting = false;
+std::chrono::system_clock::time_point trigger_time =
+    std::chrono::system_clock::time_point::max();
 
 void mq::message_callback(
         mosquitto *mosq_ptr
@@ -11,12 +13,19 @@ void mq::message_callback(
         ,const mosquitto_message *message
         )
 {
+    char *payload = (char*)message->payload;
     if(message->payloadlen)
     {
         std::cout << message->topic << " " << message->payload << std::endl;
     }
     if(strcmp((char*)message->payload, "go") == 0)
-        synced = true;
+        master_waiting = true;
+    if(payload[0] == 'o')
+    {
+        long long in_time = atoll(payload + 1);
+        std::chrono::milliseconds in_dur(in_time);
+        trigger_time = std::chrono::system_clock::time_point(in_dur);
+    }
 }
 
 void mq::connect_callback(
@@ -69,4 +78,19 @@ void mq::init(
     }
 
     mosquitto_loop_start(mosquitto_ptr);
+}
+
+void mq::send(
+        std::string m_message
+        )
+{
+    mosquitto_publish(
+            mosquitto_ptr
+            ,NULL //message id
+            ,"cube"
+            ,m_message.size()
+            ,m_message.c_str()
+            ,0 //qos
+            ,false //retain
+            );
 }

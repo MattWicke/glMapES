@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <string.h>
 #include <unistd.h>
+#include <chrono>
 
 namespace mq
 {
@@ -23,4 +24,8 @@ void connect_callback(
 void init(
         std::string hostName
         );
+void send(
+        std::string m_message
+        );
+
 }//end mqtt namespace

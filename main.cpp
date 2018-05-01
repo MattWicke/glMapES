@@ -6,6 +6,7 @@
 */
 #include "surface.h"
 #include <iostream>
+#include <sstream>
 #include "opencv2/core/core.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -27,7 +28,9 @@ int Surface::surfaceCount = 0;
 int Surface::activeSurfaceIndex = 0;
 bool masterDragState = false;
 vector<Surface> surfaces;
-extern bool synced;
+extern bool master_waiting;
+extern std::chrono::system_clock::time_point trigger_time;
+
 std::chrono::time_point<std::chrono::system_clock> frame_time;
 
 int initialize(int _argc, char* _argv[])
@@ -223,6 +226,7 @@ int main(int argc, char* argv[])
    bool useCoordlist = false;
    bool usePlist = false;
    bool isNetwork = false;
+   bool isMaster = false;
    std::string hostName;
 
    initialize(argc, argv);
@@ -294,6 +298,12 @@ int main(int argc, char* argv[])
           isNetwork = true;
           hostName = std::string(argv[i+1]);
       }
+      if(argstring == "-m")
+      {
+          isMaster = true;
+          isNetwork = true;
+          hostName = std::string(argv[i+1]);
+      }
    }
 
    if(!useCoordlist)
@@ -323,11 +333,29 @@ int main(int argc, char* argv[])
 //   glutIdleFunc(idle_callback);
     std::cout << "loaded" << std::endl;
     mq::init(hostName);
+    if(isMaster)
+    {
+        std::stringstream time_string;
+        time_string << "o";
+        std::chrono::milliseconds offset(1200);
+        while(!master_waiting)
+        {
+        }
+
+        time_string << std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch() + offset
+                ).count();
+        mq::send(time_string.str());
+    }
     if(isNetwork)
     {
+        while(std::chrono::system_clock::now() <= trigger_time)
+        {
+            //std::cout <<  std::chrono::duration_cast<std::chrono::milliseconds>(
+                    //std::chrono::system_clock::now() - trigger_time)
+                //<< std::endl;
+        }
         play = true;
-        while(!synced);
-        std::cout << "runnning" << std::endl;
     }
    glutTimerFunc(100, timer_callback, 0);
    glutMainLoop();
