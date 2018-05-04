@@ -7,6 +7,8 @@
 #include "util.h"
 #include "types.h"
 #include "ogl.h"
+#include "mqtt.h"
+
 class Surface
 {
     enum Mode{ STILL, VIDEO }mode;
@@ -36,14 +38,26 @@ class Surface
     GLuint vboTexcoords;
     GLuint program; 
     GLfloat vertexData[8];
+    GLfloat texCoordData[8];
+    std::string hostname;
+    bool isNetworked;
+    Surface(
+            std::vector<string> _plist
+            , GLfloat* _vertexData
+            , GLuint _program
+            , int _handleRad=35
+            , bool m_isNetworked=false
+            , std::string m_hostname=std::string("")
+           );
 
-    Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _program, int _handleRad=35);
     void draw();
     void update();
+    void rewind();
     void dragHandle(double _x, double _y);
     void releaseHandle();
     float* getVertData();
-    void reset();
+    bool isVideoOver();
+    void reset(); 
 private:
     cv::Mat alpha;
     cv::Mat padded_frame;

@@ -7,13 +7,29 @@ void check(std::string functionName)
 		std::cout << "************* GL ERROR: " << err 
 			<< functionName << std::endl;
 }
-Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _program, int _handleRad):
+Surface::Surface(
+        std::vector<string> _plist
+        , GLfloat* _vertexData
+        , GLuint _program
+        , int _handleRad
+        , bool m_isNetworked
+        , std::string m_hostname
+        ):
     plist(_plist),
     program(_program),
     handleRad(_handleRad),
     activeHandleIndex(numHandles + 1),
     frameIndex(0),
-    plistIndex(0)
+    plistIndex(0),
+    isNetworked(m_isNetworked),
+    hostname(m_hostname),
+    texCoordData
+    {
+        1.0f,   1.0f,
+        0.0f,   1.0f,
+        0.0f,   0.0f,
+        1.0f,   0.0f,
+    }
 {
     vidCap.open(plist[0].c_str());
     if(!vidCap.isOpened())
@@ -56,13 +72,13 @@ Surface::Surface(std::vector<string> _plist, GLfloat* _vertexData, GLuint _progr
     glBindBuffer(GL_ARRAY_BUFFER, vboVert);
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 8,vertexData, GL_STATIC_DRAW);
 
-    GLfloat texCoordData[] =
-    {
-        1.0f,   1.0f,
-        0.0f,   1.0f,
-        0.0f,   0.0f,
-        1.0f,   0.0f,
-    };
+    //texCoordData =
+    //{
+    //    1.0f,   1.0f,
+    //    0.0f,   1.0f,
+    //    0.0f,   0.0f,
+    //    1.0f,   0.0f,
+    //};
 
     glGenVertexArrays( 1, &vboTexcoords ) ;
     glGenBuffers(1, &vboTexcoords);
@@ -153,86 +169,28 @@ void Surface::draw()
   //glDrawElements(GL_TRIANGLES, size/sizeof(GLushort), GL_UNSIGNED_SHORT, 0);
 }
 
+bool Surface::isVideoOver()
+{
+    return (vidCap.get(CV_CAP_PROP_POS_FRAMES) > vidCap.get(CV_CAP_PROP_FRAME_COUNT) - 1);
+}
+
 void Surface::update()
 {
-    GLfloat texCoordData[] =
-    {
-        1.0f,   1.0f,
-        0.0f,   1.0f,
-        0.0f,   0.0f,
-        1.0f,   0.0f,
-    };
-    if(vidCap.get(CV_CAP_PROP_POS_FRAMES) > vidCap.get(CV_CAP_PROP_FRAME_COUNT) - 1)
-    {
-        repeatCount = 0;
-        vidCap.release();
-        if(plistIndex < plist.size() -1)
-            plistIndex++;
-        else
-            plistIndex = 0;
-        cout << "Opening: " << plist[plistIndex].c_str() << endl;
-        vidCap.open(plist[plistIndex].c_str());
-        if(!vidCap.isOpened())
-            cout << "*************Furck******************************" << endl;
-        vidCap >> frame;
-        cv::Mat frameArray[] = {frame, alpha};
-        int from_to[] = {0,2, 1,1, 2,0, 3,3};
-        cv::mixChannels(
-                frameArray
-                , 2
-                , &padded_frame
-                , 1
-                , from_to
-                , 4
-                );
-
-        glDeleteBuffers(1, &vboTexcoords);
-        glGenBuffers(1, &vboTexcoords);
-        glBindBuffer(GL_ARRAY_BUFFER, vboTexcoords);
-        glBufferData(GL_ARRAY_BUFFER
-			, sizeof(texCoordData)
-			, texCoordData
-			, GL_STREAM_DRAW);
-
-        glDeleteBuffers(1, &texBuffer);
-        glGenBuffers( 1, &texBuffer ); 
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
-
-        glDeleteTextures( 1, &textureObj );
-        glGenTextures( 1, &textureObj );
-        glBindTexture( GL_TEXTURE_2D,  textureObj );
-
-        glPixelStorei(GL_UNPACK_ROW_LENGTH
-                , padded_frame.step/padded_frame.elemSize());
-        glBufferData( GL_PIXEL_UNPACK_BUFFER,
-                  padded_frame.rows * padded_frame.cols * 4,
-                  padded_frame.data,
-                  GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
-    
-
-        //glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, frame.cols, frame.rows);
-
-	    glTexImage2D(
-		    GL_TEXTURE_2D
-		    , 0 //LEVEL
-		    , 4 //base,
-		    , frame.cols
-		    , frame.rows
-		    , 0
-		    , GL_RGBA
-		    , GL_UNSIGNED_BYTE
-		    ,NULL);
-        glTexSubImage2D(GL_TEXTURE_2D,
-                        0,      //mip level
-                        0, 0,   // offset
-                        frame.cols, 
-                        frame.rows,
-                        GL_RGBA, 
-                        GL_UNSIGNED_BYTE,
-                        NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    }
+   // GLfloat texCoordData[] =
+   // {
+   //     1.0f,   1.0f,
+   //     0.0f,   1.0f,
+   //     0.0f,   0.0f,
+   //     1.0f,   0.0f,
+   // };
+    //if(vidCap.get(CV_CAP_PROP_POS_FRAMES) > vidCap.get(CV_CAP_PROP_FRAME_COUNT) - 1)
+    //{
+    //    std::string message("d");
+    //    rewind();
+    //    message += surfaceID;
+    //    message += "_";
+    //    message += hostname;
+    //}
 
     vidCap >> frame;
     cv::Mat frameArray[] = {frame, alpha};
@@ -274,6 +232,79 @@ void Surface::update()
    //std::cout <<  "update" << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
 
 }
+
+void Surface::rewind()
+{
+    repeatCount = 0;
+    vidCap.release();
+    if(plistIndex < plist.size() -1)
+        plistIndex++;
+    else
+        plistIndex = 0;
+    cout << "Opening: " << plist[plistIndex].c_str() << endl;
+    vidCap.open(plist[plistIndex].c_str());
+    if(!vidCap.isOpened())
+        cout << "videocap did not open" << endl;
+    vidCap >> frame;
+    cv::Mat frameArray[] = {frame, alpha};
+    int from_to[] = {0,2, 1,1, 2,0, 3,3};
+    cv::mixChannels(
+            frameArray
+            , 2
+            , &padded_frame
+            , 1
+            , from_to
+            , 4
+            );
+
+    glDeleteBuffers(1, &vboTexcoords);
+    glGenBuffers(1, &vboTexcoords);
+    glBindBuffer(GL_ARRAY_BUFFER, vboTexcoords);
+    glBufferData(GL_ARRAY_BUFFER
+        , sizeof(texCoordData)
+        , texCoordData
+        , GL_STREAM_DRAW);
+
+    glDeleteBuffers(1, &texBuffer);
+    glGenBuffers( 1, &texBuffer ); 
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
+
+    glDeleteTextures( 1, &textureObj );
+    glGenTextures( 1, &textureObj );
+    glBindTexture( GL_TEXTURE_2D,  textureObj );
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH
+            , padded_frame.step/padded_frame.elemSize());
+    glBufferData( GL_PIXEL_UNPACK_BUFFER,
+              padded_frame.rows * padded_frame.cols * 4,
+              padded_frame.data,
+              GL_STREAM_DRAW); // need to change this to GL_STREAM_DRAW
+
+
+    //glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, frame.cols, frame.rows);
+
+    glTexImage2D(
+        GL_TEXTURE_2D
+        , 0 //LEVEL
+        , 4 //base,
+        , frame.cols
+        , frame.rows
+        , 0
+        , GL_RGBA
+        , GL_UNSIGNED_BYTE
+        ,NULL);
+    glTexSubImage2D(GL_TEXTURE_2D,
+                    0,      //mip level
+                    0, 0,   // offset
+                    frame.cols, 
+                    frame.rows,
+                    GL_RGBA, 
+                    GL_UNSIGNED_BYTE,
+                    NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+}
+
 void Surface::dragHandle(double _x, double _y)
 {
     /* so activeHandleIndex will be initialized to a value

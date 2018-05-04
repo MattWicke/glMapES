@@ -6,6 +6,7 @@ struct mosquitto *mosquitto_ptr = NULL;
 bool master_waiting = false;
 std::chrono::system_clock::time_point trigger_time =
     std::chrono::system_clock::time_point::max();
+int done_count = 0;
 
 void mq::message_callback(
         mosquitto *mosq_ptr
@@ -25,6 +26,23 @@ void mq::message_callback(
         long long in_time = atoll(payload + 1);
         std::chrono::milliseconds in_dur(in_time);
         trigger_time = std::chrono::system_clock::time_point(in_dur);
+    }
+    if(payload[0] == 'd')
+    {
+        done_count++;
+        if(done_count >= 2)
+        {
+            std::stringstream time_string;
+            time_string << "o";
+            std::chrono::milliseconds offset(1300);
+
+            time_string << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch() + offset
+                    ).count();
+            mq::send(time_string.str());
+
+            done_count = 0;
+        }
     }
 }
 

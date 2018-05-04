@@ -18,6 +18,7 @@
 
 #include <math.h>
 #include "util.h"
+std::string hostName;
 
 using namespace cv; 
 //global vars 
@@ -26,6 +27,7 @@ bool fullScreen = false;
 bool play = false;
 int Surface::surfaceCount = 0;
 int Surface::activeSurfaceIndex = 0;
+bool isNetwork = false;
 bool masterDragState = false;
 vector<Surface> surfaces;
 extern bool master_waiting;
@@ -54,28 +56,61 @@ void display_callback(void)
 
    glutSwapBuffers();
    std::chrono::duration<double> elapsed_time = now - frame_time;
-   std::cout <<  std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
+   //std::cout <<  std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
     frame_time = now;
 }
 
 //void idle_callback(void)
 void timer_callback(int value)
 {
-   glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
-   glutPostRedisplay();
-   if(play)
-   {
-      for(int i = 0; i < surfaces.size(); i++)
-      {
-         surfaces[i].update();
-      }
-   }
+    int over_count = 0;
+    //** check how many are done
+    for(int i = 0; i < surfaces.size(); i++)
+    {
+        if(surfaces[i].isVideoOver())
+            over_count++;
+    }
 
-   glClear(GL_COLOR_BUFFER_BIT); 
-   for(int i = 0; i < surfaces.size(); i++)
-   {
-      surfaces[i].draw();
-   }
+    if(over_count < surfaces.size())
+    {
+        //** not done yet; update and render
+        glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
+        glutPostRedisplay();
+        if(play)
+        {
+            for(int i = 0; i < surfaces.size(); i++)
+            {
+                if(!surfaces[i].isVideoOver())
+                    surfaces[i].update();
+            }
+        }
+     
+        glClear(GL_COLOR_BUFFER_BIT); 
+        for(int i = 0; i < surfaces.size(); i++)
+        {
+            surfaces[i].draw();
+        }
+    }
+    else
+    {
+        //** all surfaces are done wait for restart message then rewind videos
+        if(isNetwork)
+        {
+            std::string message("d_");
+            message += hostName;
+            mq::send(message);
+            while(std::chrono::system_clock::now() <= trigger_time);
+            //** reset time
+            trigger_time =std::chrono::system_clock::time_point::max();
+        }
+
+        for(int i = 0; i < surfaces.size(); i++)
+        {
+            surfaces[i].rewind();
+        }
+        glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
+        glutPostRedisplay();
+    }
 }
 
 double pix2cart(float inval, float max)
@@ -225,9 +260,7 @@ int main(int argc, char* argv[])
    bool usePlaylist = false;
    bool useCoordlist = false;
    bool usePlist = false;
-   bool isNetwork = false;
    bool isMaster = false;
-   std::string hostName;
 
    initialize(argc, argv);
    GLenum ret = glewInit();
@@ -356,6 +389,8 @@ int main(int argc, char* argv[])
                 //<< std::endl;
         }
         play = true;
+        //** must reset trigger time so done surfaces can wait for reset signal
+        trigger_time =std::chrono::system_clock::time_point::max();
     }
    glutTimerFunc(100, timer_callback, 0);
    glutMainLoop();

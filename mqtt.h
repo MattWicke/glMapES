@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <chrono>
+#include <sstream>
 
 namespace mq
 {
