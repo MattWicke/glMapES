@@ -22,7 +22,7 @@ std::string hostName;
 
 using namespace cv; 
 //global vars 
-const int FRAMERATE = 25;
+const int FRAMERATE = 20;
 bool fullScreen = false;
 bool play = false;
 int Surface::surfaceCount = 0;
@@ -370,7 +370,7 @@ int main(int argc, char* argv[])
     {
         std::stringstream time_string;
         time_string << "o";
-        std::chrono::milliseconds offset(1200);
+        std::chrono::milliseconds offset(2000);
         while(!master_waiting)
         {
         }
