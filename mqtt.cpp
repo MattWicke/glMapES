@@ -17,7 +17,7 @@ void mq::message_callback(
     char *payload = (char*)message->payload;
     if(message->payloadlen)
     {
-        std::cout << message->topic << " " << message->payload << std::endl;
+        std::cout << (char*)message->topic << " " << message->payload << std::endl;
     }
     if(strcmp((char*)message->payload, "go") == 0)
         master_waiting = true;
@@ -30,7 +30,8 @@ void mq::message_callback(
     if(payload[0] == 'd')
     {
         done_count++;
-        if(done_count >= 3)
+        std::cout << "bang" <<std::endl;
+        if(done_count >= 4)
         {
             std::stringstream time_string;
             time_string << "o";
