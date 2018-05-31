@@ -31,6 +31,7 @@ bool isNetwork = false;
 bool masterDragState = false;
 vector<Surface> surfaces;
 extern bool master_waiting;
+extern bool isMaster;
 extern std::chrono::system_clock::time_point trigger_time;
 
 std::chrono::time_point<std::chrono::system_clock> frame_time;
@@ -262,7 +263,6 @@ int main(int argc, char* argv[])
    bool usePlaylist = false;
    bool useCoordlist = false;
    bool usePlist = false;
-   bool isMaster = false;
 
    initialize(argc, argv);
    GLenum ret = glewInit();

@@ -7,6 +7,7 @@ bool master_waiting = false;
 std::chrono::system_clock::time_point trigger_time =
     std::chrono::system_clock::time_point::max();
 int done_count = 0;
+bool isMaster = false;
 
 void mq::message_callback(
         mosquitto *mosq_ptr
@@ -17,7 +18,7 @@ void mq::message_callback(
     char *payload = (char*)message->payload;
     if(message->payloadlen)
     {
-        std::cout << (char*)message->topic << " " << message->payload << std::endl;
+        std::cout << message->topic << " " << (char*)message->payload << std::endl;
     }
     if(strcmp((char*)message->payload, "go") == 0)
         master_waiting = true;
@@ -27,12 +28,13 @@ void mq::message_callback(
         std::chrono::milliseconds in_dur(in_time);
         trigger_time = std::chrono::system_clock::time_point(in_dur);
     }
-    if(payload[0] == 'd')
+    if(payload[0] == 'd' && isMaster)
     {
+        std::cout << "bang " <<done_count << std::endl;
         done_count++;
-        std::cout << "bang" <<std::endl;
         if(done_count >= 4)
         {
+            std::cout << "********done_count " << done_count <<std::endl;
             std::stringstream time_string;
             time_string << "o";
             std::chrono::milliseconds offset(1300);
@@ -41,8 +43,8 @@ void mq::message_callback(
                     std::chrono::system_clock::now().time_since_epoch() + offset
                     ).count();
             mq::send(time_string.str());
-
             done_count = 0;
+
         }
     }
 }
