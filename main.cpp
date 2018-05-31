@@ -63,6 +63,7 @@ void display_callback(void)
 //void idle_callback(void)
 void timer_callback(int value)
 {
+    glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
     int over_count = 0;
     //** check how many are done
     for(int i = 0; i < surfaces.size(); i++)
@@ -108,7 +109,6 @@ void timer_callback(int value)
         {
             surfaces[i].rewind();
         }
-        glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
         glutPostRedisplay();
     }
 }
