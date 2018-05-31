@@ -246,6 +246,16 @@ void Surface::rewind()
     if(!vidCap.isOpened())
         cout << "videocap did not open" << endl;
     vidCap >> frame;
+    alpha = cv::Mat(
+               frame.rows
+               ,frame.cols
+               ,CV_8UC1
+               , 255);
+    padded_frame = cv::Mat(
+            frame.rows
+            ,frame.cols
+            ,CV_8UC4
+            );
     cv::Mat frameArray[] = {frame, alpha};
     int from_to[] = {0,2, 1,1, 2,0, 3,3};
     cv::mixChannels(
