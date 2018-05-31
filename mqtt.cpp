@@ -30,7 +30,7 @@ void mq::message_callback(
     if(payload[0] == 'd')
     {
         done_count++;
-        if(done_count >= 2)
+        if(done_count >= 3)
         {
             std::stringstream time_string;
             time_string << "o";
