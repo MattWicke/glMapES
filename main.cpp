@@ -52,18 +52,18 @@ int initialize(int _argc, char* _argv[])
 
 void display_callback(void)
 {
-    std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
 
-   glutSwapBuffers();
-   std::chrono::duration<double> elapsed_time = now - frame_time;
-   //std::cout <<  std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
-    frame_time = now;
+//   glutSwapBuffers();
 }
 
 //void idle_callback(void)
 void timer_callback(int value)
 {
-    glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
+    std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+   std::chrono::duration<double> elapsed_time = now - frame_time;
+   std::cout <<  std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() << std::endl;
+    frame_time = now;
+
     int over_count = 0;
     //** check how many are done
     for(int i = 0; i < surfaces.size(); i++)
@@ -76,7 +76,8 @@ void timer_callback(int value)
     {
         //** not done yet; update and render
         glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
-        glutPostRedisplay();
+   glutSwapBuffers();
+//        glutPostRedisplay();
         if(play)
         {
             for(int i = 0; i < surfaces.size(); i++)
@@ -109,6 +110,7 @@ void timer_callback(int value)
         {
             surfaces[i].rewind();
         }
+        glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
         glutPostRedisplay();
     }
 }
