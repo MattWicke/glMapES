@@ -31,12 +31,25 @@ Surface::Surface(
         1.0f,   0.0f,
     }
 {
-    vidCap.open(plist[0].c_str());
-    if(!vidCap.isOpened())
-        std::cerr << "ERROR: failed to open " << plist[0] << std::endl;
+    //** check if the file is an image or video
+    if(plist[0].find("jpg") != std::string::npos
+      || plist[0].find("png") != std::string::npos
+      || plist[0].find("pgm") != std::string::npos
+      )
+    {
+        mode = STILL;
+        frame = imread(plist[0]);
+    }
+    else
+    {
+        mode = VIDEO;
+        vidCap.open(plist[0].c_str());
+        if(!vidCap.isOpened())
+            std::cerr << "ERROR: failed to open " << plist[0] << std::endl;
+        vidCap >> frame;
+    }
 
 
-    vidCap >> frame;
      alpha = cv::Mat(
                 frame.rows
                 ,frame.cols
@@ -171,27 +184,20 @@ void Surface::draw()
 
 bool Surface::isVideoOver()
 {
-    return (vidCap.get(CV_CAP_PROP_POS_FRAMES) > vidCap.get(CV_CAP_PROP_FRAME_COUNT) - 1);
+    bool ret_val = false;
+    if(mode == VIDEO)
+    {
+        ret_val = (vidCap.get(CV_CAP_PROP_POS_FRAMES) 
+                > vidCap.get(CV_CAP_PROP_FRAME_COUNT) - 1);
+    }
+
+    return  ret_val;
 }
 
 void Surface::update()
 {
-   // GLfloat texCoordData[] =
-   // {
-   //     1.0f,   1.0f,
-   //     0.0f,   1.0f,
-   //     0.0f,   0.0f,
-   //     1.0f,   0.0f,
-   // };
-    //if(vidCap.get(CV_CAP_PROP_POS_FRAMES) > vidCap.get(CV_CAP_PROP_FRAME_COUNT) - 1)
-    //{
-    //    std::string message("d");
-    //    rewind();
-    //    message += surfaceID;
-    //    message += "_";
-    //    message += hostname;
-    //}
-
+    if(mode == STILL)
+        return;
     vidCap >> frame;
     cv::Mat frameArray[] = {frame, alpha};
     int from_to[] = {0,2, 1,1, 2,0, 3,3};
@@ -235,6 +241,9 @@ void Surface::update()
 
 void Surface::rewind()
 {
+    if(mode == STILL)
+        return;
+
     repeatCount = 0;
     vidCap.release();
     if(plistIndex < plist.size() -1)
