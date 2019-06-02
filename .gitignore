@@ -6,3 +6,7 @@
 !light.clist
 *.plist
 *.swp
+map
+circle/
+*.bmp
+together18/
