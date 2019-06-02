@@ -11,7 +11,7 @@
 
 class Surface
 {
-    enum Mode{ STILL, VIDEO }mode;
+    enum S_type{ STILL, VIDEO }s_type;
     static int surfaceCount;
 
     public:
@@ -48,6 +48,7 @@ class Surface
             , int _handleRad=35
             , bool m_isNetworked=false
             , std::string m_hostname=std::string("")
+            , bool m_is_align=true
            );
 
     void draw();
@@ -61,4 +62,5 @@ class Surface
 private:
     cv::Mat alpha;
     cv::Mat padded_frame;
+    void drawHandles(cv::Mat &m_frame);
 };

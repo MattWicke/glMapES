@@ -14,6 +14,7 @@ Surface::Surface(
         , int _handleRad
         , bool m_isNetworked
         , std::string m_hostname
+        , bool m_is_align
         ):
     plist(_plist),
     program(_program),
@@ -37,12 +38,12 @@ Surface::Surface(
       || plist[0].find("pgm") != std::string::npos
       )
     {
-        mode = STILL;
+        s_type = STILL;
         frame = imread(plist[0]);
     }
     else
     {
-        mode = VIDEO;
+        s_type = VIDEO;
         vidCap.open(plist[0].c_str());
         if(!vidCap.isOpened())
             std::cerr << "ERROR: failed to open " << plist[0] << std::endl;
@@ -70,6 +71,7 @@ Surface::Surface(
             , from_to
             , 4
             );
+    drawHandles(padded_frame);
 
 
     glGenVertexArrays(1, &vertexArrayObj);
@@ -148,6 +150,62 @@ Surface::Surface(
     surfaceCount++;
 }
 
+void Surface::drawHandles(cv::Mat &m_frame)
+{
+    cv::Point pt1;
+    cv::Point pt2;
+    int box_width = handleRad/2;
+
+    //* top left
+    pt1.x = 0;
+    pt1.y = 0;
+    pt2.x = box_width;
+    pt2.y = box_width;
+    cv::rectangle(
+            m_frame
+            ,pt1
+            ,pt2
+            ,cv::Scalar(100,255,0)
+            ,-1 //draw filled rect
+            );
+    //* top right
+    pt1.x = m_frame.cols - box_width;
+    pt1.y = 0;
+    pt2.x = m_frame.cols;
+    pt2.y = box_width;
+    cv::rectangle(
+            m_frame
+            ,pt1
+            ,pt2
+            ,cv::Scalar(100,255,0)
+            ,-1 //draw filled rect
+            );
+    //* bottom left
+    pt1.x = 0;
+    pt1.y = m_frame.rows - box_width;
+    pt2.x = box_width;
+    pt2.y = m_frame.rows;
+    cv::rectangle(
+            m_frame
+            ,pt1
+            ,pt2
+            ,cv::Scalar(100,255,0)
+            ,-1 //draw filled rect
+            );
+    //* bottom right
+    pt1.x = m_frame.cols - box_width;
+    pt1.y = m_frame.rows - box_width;
+    pt2.x = m_frame.cols;
+    pt2.y = m_frame.rows;
+    cv::rectangle(
+            m_frame
+            ,pt1
+            ,pt2
+            ,cv::Scalar(100,255,0)
+            ,-1 //draw filled rect
+            );
+}
+
 void Surface::draw()
 {
 	glUseProgram(program);
@@ -185,7 +243,7 @@ void Surface::draw()
 bool Surface::isVideoOver()
 {
     bool ret_val = false;
-    if(mode == VIDEO)
+    if(s_type == VIDEO)
     {
         ret_val = (vidCap.get(CV_CAP_PROP_POS_FRAMES) 
                 > vidCap.get(CV_CAP_PROP_FRAME_COUNT) - 1);
@@ -196,7 +254,7 @@ bool Surface::isVideoOver()
 
 void Surface::update()
 {
-    if(mode == STILL)
+    if(s_type == STILL)
         return;
     vidCap >> frame;
     cv::Mat frameArray[] = {frame, alpha};
@@ -241,7 +299,7 @@ void Surface::update()
 
 void Surface::rewind()
 {
-    if(mode == STILL)
+    if(s_type == STILL)
         return;
 
     repeatCount = 0;
