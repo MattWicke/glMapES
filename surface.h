@@ -52,7 +52,7 @@ class Surface
            );
 
     void draw();
-    void update();
+    void update(bool is_paused);
     void rewind();
     void dragHandle(double _x, double _y);
     void releaseHandle();

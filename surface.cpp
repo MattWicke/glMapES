@@ -252,7 +252,7 @@ bool Surface::isVideoOver()
     return  ret_val;
 }
 
-void Surface::update()
+void Surface::update(bool is_paused)
 {
     if(s_type == STILL)
         return;
@@ -267,6 +267,9 @@ void Surface::update()
             , from_to
             , 4
             );
+
+    if(is_paused)
+        drawHandles(padded_frame);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texBuffer);
     glPixelStorei(GL_UNPACK_ROW_LENGTH

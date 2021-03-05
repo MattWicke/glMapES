@@ -22,7 +22,7 @@ std::string hostName;
 
 using namespace cv; 
 //global vars 
-const int FRAMERATE = 20;
+const int FRAMERATE = 30;
 bool fullScreen = false;
 bool play = false;
 int Surface::surfaceCount = 0;
@@ -77,14 +77,14 @@ void timer_callback(int value)
     {
         //** not done yet; update and render
         glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
-   glutSwapBuffers();
+        glutSwapBuffers();
 //        glutPostRedisplay();
         if(play)
         {
             for(int i = 0; i < surfaces.size(); i++)
             {
                 if(!surfaces[i].isVideoOver())
-                    surfaces[i].update();
+                    surfaces[i].update(false); //is_paused = false
             }
         }
      
@@ -92,6 +92,18 @@ void timer_callback(int value)
         for(int i = 0; i < surfaces.size(); i++)
         {
             surfaces[i].draw();
+        }
+
+        // this may need to be removed for the big cube stack to make sure
+        // sync still works. Right now I'm playing vidoes with different 
+        // lengths so just rewind as needed TODO move to cmd line option
+        if(!isNetwork)
+        {
+            for(int i = 0; i < surfaces.size(); i++)
+            {
+                if(surfaces[i].isVideoOver())
+                    surfaces[i].rewind();
+            }
         }
     }
     else
@@ -105,14 +117,16 @@ void timer_callback(int value)
             while(std::chrono::system_clock::now() <= trigger_time);
             //** reset time
             trigger_time =std::chrono::system_clock::time_point::max();
+
+            /* moved this up 3-3-21  but its untested*/
+            for(int i = 0; i < surfaces.size(); i++)
+            {
+                surfaces[i].rewind();
+            }
+            glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
+            glutPostRedisplay();
         }
 
-        for(int i = 0; i < surfaces.size(); i++)
-        {
-            surfaces[i].rewind();
-        }
-        glutTimerFunc(1000/FRAMERATE, timer_callback, 0);
-        glutPostRedisplay();
     }
 }
 
@@ -179,6 +193,7 @@ void mouseButtonCB( int _button, int _state, int _x, int _y)
 
 void mouseMoveCB( int _x, int _y)
 {
+    
    _y = glutGet(GLUT_WINDOW_HEIGHT) - _y; //invert y because 
 //   cout << "Moved x " << _x  << " xn " << pix2cart(_x, glutGet(GLUT_WINDOW_WIDTH));
 //   cout << " y " << _y << " yn " << pix2cart(_y, glutGet(GLUT_WINDOW_HEIGHT)) << endl;
@@ -227,6 +242,24 @@ void keyboardCB( unsigned char _key, int _x, int _y)
    }
    if(_key == 'p')
    {
+
+        //** TODO this is duplicated from the normal timer render loop
+        //I dont have time to move it to a function right now
+        glutSwapBuffers();
+        if(play)
+        {
+            for(int i = 0; i < surfaces.size(); i++)
+            {
+                if(!surfaces[i].isVideoOver())
+                    surfaces[i].update(true); //is_paused = false
+            }
+        }
+     
+        glClear(GL_COLOR_BUFFER_BIT); 
+        for(int i = 0; i < surfaces.size(); i++)
+        {
+            surfaces[i].draw();
+        }
       play = !play;
    }
    if(_key == 'r')
@@ -338,6 +371,12 @@ int main(int argc, char* argv[])
           isMaster = true;
           isNetwork = true;
           hostName = std::string(argv[i+1]);
+      }
+      if(argstring == "-f")
+      {
+         glutFullScreen();
+         fullScreen = true;
+         play = true;
       }
    }
 
