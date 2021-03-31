@@ -25,6 +25,7 @@ using namespace cv;
 const int FRAMERATE = 30;
 bool fullScreen = false;
 bool play = false;
+bool cursor_mode = true;
 int Surface::surfaceCount = 0;
 int Surface::activeSurfaceIndex = 0;
 bool isNetwork = false;
@@ -146,6 +147,11 @@ void mouseButtonCB( int _button, int _state, int _x, int _y)
    int bigI = -1;
    int bigJ = -1;
    
+    //if(!cursor_mode)
+    //{
+        cursor_mode = true;
+        glutSetCursor(GLUT_CURSOR_INHERIT);
+    //}
    
 //   double tempX = (double)_x / glutGet(GLUT_WINDOW_WIDTH);
 //   double tempY = (double)_y / glutGet(GLUT_WINDOW_HEIGHT);
@@ -254,6 +260,10 @@ void keyboardCB( unsigned char _key, int _x, int _y)
                     surfaces[i].update(true); //is_paused = false
             }
         }
+        else
+        {
+             glutSetCursor(GLUT_CURSOR_NONE);
+        }
      
         glClear(GL_COLOR_BUFFER_BIT); 
         for(int i = 0; i < surfaces.size(); i++)
@@ -283,6 +293,7 @@ void keyboardCB( unsigned char _key, int _x, int _y)
    {
       dumpFrameBuffer();
    }
+   
 }
 
 int main(int argc, char* argv[])
@@ -377,6 +388,8 @@ int main(int argc, char* argv[])
          glutFullScreen();
          fullScreen = true;
          play = true;
+         cursor_mode = "false";
+         glutSetCursor(GLUT_CURSOR_NONE);
       }
    }
 
